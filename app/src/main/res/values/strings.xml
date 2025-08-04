@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Currency App</string>
+    <string name="amount">Enter Amount</string>
+    <string name="selected_country">Selected Country</string>
+    <string name="disclaimer">Disclaimer</string>
+    <string name="license">License</string>
+</resources>

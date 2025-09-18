@@ -85,4 +85,6 @@ dependencies {
     implementation(libs.androidx.paging.compose)
     implementation(libs.androidx.work.runtime.ktx)
     testImplementation(libs.kotlinx.coroutines.test)
+    implementation(libs.coil.compose)
+    implementation(libs.androidx.material.icons.extended)
 }

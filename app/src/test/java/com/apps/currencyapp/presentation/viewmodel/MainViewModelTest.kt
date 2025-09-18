@@ -6,7 +6,7 @@ import android.util.Log
 import com.apps.currencyapp.data.local.entity.CurrencyEntity
 import com.apps.currencyapp.data.local.sharedPref.AppConfig
 import com.apps.currencyapp.data.remote.models.CurrencyModel
-import com.apps.currencyapp.presentation.composables.DispatcherProvider
+import com.apps.currencyapp.utils.DispatcherProvider
 import com.apps.currencyapp.repository.local.ICurrencyLocalRepository
 import com.apps.currencyapp.repository.remote.ICurrencyRemoteRepository
 import com.apps.currencyapp.utils.AppConstants

@@ -6,10 +6,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.apps.currencyapp.data.local.entity.CurrencyEntity
 import com.apps.currencyapp.data.local.sharedPref.AppConfig
-import com.apps.currencyapp.presentation.composables.DispatcherProvider
 import com.apps.currencyapp.repository.local.ICurrencyLocalRepository
 import com.apps.currencyapp.repository.remote.ICurrencyRemoteRepository
 import com.apps.currencyapp.utils.AppConstants
+import com.apps.currencyapp.utils.DispatcherProvider
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -17,6 +17,10 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 @HiltViewModel
@@ -30,26 +34,31 @@ class MainViewModel @Inject constructor(
 
     private val _currencies = MutableStateFlow(listOf<CurrencyEntity>())
     private val _amount = MutableStateFlow("")
-    private val _selectedCurrency = MutableStateFlow(AppConstants.DEFAULT_CURRENCY)
     private val _shouldShowLoader = MutableStateFlow(false)
     private val _disclaimer = MutableStateFlow(false)
     private val _license = MutableStateFlow(false)
+    private val _currency1 =
+        MutableStateFlow(CurrencySelectionModel(AppConstants.DEFAULT_CURRENCY_1, ""))
+    private val _currency2 =
+        MutableStateFlow(CurrencySelectionModel(AppConstants.DEFAULT_CURRENCY_2, ""))
     private var currencyAmountMapping = mutableMapOf<String, Double>()
     private var countryCodeMapping = mutableMapOf<String, String>()
 
     val currencies = _currencies.asStateFlow()
     val amount = _amount.asStateFlow()
-    val selectedCurrency = _selectedCurrency.asStateFlow()
-    val shouldShowLoader = _shouldShowLoader.asStateFlow()
     val disclaimer = _disclaimer.asStateFlow()
     val license = _license.asStateFlow()
+    val currency1 = _currency1.asStateFlow()
+    val currency2 = _currency2.asStateFlow()
 
-    fun warmViewModelWithDefaults(){
+    fun warmViewModelWithDefaults() {
         viewModelScope.launch(DispatcherProvider.getIODispatcher()) {
-            var json = context.assets.open(AppConstants.COUNTRY_CODE_MAPPING).bufferedReader().use { it.readText() }
+            var json = context.assets.open(AppConstants.COUNTRY_CODE_MAPPING).bufferedReader()
+                .use { it.readText() }
             var type = object : TypeToken<Map<String, String>>() {}.type
             countryCodeMapping = gson.fromJson(json, type)
-            json = context.assets.open(AppConstants.DEFAULT_CURRENCY_RATES).bufferedReader().use { it.readText() }
+            json = context.assets.open(AppConstants.DEFAULT_CURRENCY_RATES).bufferedReader()
+                .use { it.readText() }
             type = object : TypeToken<List<CurrencyEntity>>() {}.type
             currencyLocalRepository.saveAllCurrencies(gson.fromJson(json, type))
         }
@@ -63,30 +72,77 @@ class MainViewModel @Inject constructor(
                     val response = currencyRemoteRepository.fetchDefaultUSDExchangeRate()
                     if (response.isSuccessful) {
                         response.body()?.let { body ->
-                            val currencies = body.rates.map { CurrencyEntity(it.key, countryCodeMapping[it.key]!!, it.value) }
+                            val currencies = body.rates.map {
+                                CurrencyEntity(
+                                    it.key,
+                                    countryCodeMapping[it.key]!!,
+                                    it.value
+                                )
+                            }
                             currencyLocalRepository.saveAllCurrencies(currencies)
                             appConfig.setLastFetchTimestamp(System.currentTimeMillis())
                         }
                     }
-                }catch (e: Exception){
+                } catch (e: Exception) {
                     Log.d("Exception in network call", e.message ?: "")
                 }
             }
             val currencyEntity = currencyLocalRepository.getAllCurrencies()
-            currencyAmountMapping = currencyEntity.associateBy(keySelector = { it.currencyName }, valueTransform = { it.amount }).toMutableMap()
+            currencyAmountMapping = currencyEntity.associateBy(
+                keySelector = { it.currencyName },
+                valueTransform = { it.amount }).toMutableMap()
             _currencies.value = currencyEntity.sortedBy { it.countryName }
             _shouldShowLoader.value = false
         }
     }
 
-    fun updateAmount(value: String) {
-        _amount.value = value
-        convertCurrencyRatesBasedOnValue(_selectedCurrency.value)
+    fun updateAmount(value: String, type: CurrencyInputType) {
+        if (type == CurrencyInputType.CURRENCY_1) {
+            _currency1.value = _currency1.value.copy(currentAmount = value)
+            _currency2.value = _currency2.value.copy(
+                currentAmount = getConvertedAmount(
+                    _currency1.value.currencyName,
+                    _currency2.value.currencyName,
+                    _currency1.value.currentAmount
+                )
+            )
+        } else {
+            _currency2.value = _currency2.value.copy(currentAmount = value)
+            _currency1.value = _currency1.value.copy(
+                currentAmount = getConvertedAmount(
+                    _currency1.value.currencyName,
+                    _currency2.value.currencyName,
+                    _currency2.value.currentAmount
+                )
+            )
+        }
     }
 
-    fun onCurrencySelected(value: String) {
-        _selectedCurrency.value = value
-        convertCurrencyRatesBasedOnValue(value)
+    //amount*x USD
+    fun onCurrencySelected(selectedCurrency: String, currencyInputType: CurrencyInputType) {
+        if (currencyInputType == CurrencyInputType.CURRENCY_1) {
+            _currency1.value = _currency1.value.copy(currencyName = selectedCurrency)
+            _currency2.value = _currency2.value.copy(
+                currentAmount = getConvertedAmount(
+                    selectedCurrency,
+                    _currency2.value.currencyName,
+                    _currency1.value.currentAmount
+                )
+            )
+        } else {
+            _currency2.value = _currency2.value.copy(currencyName = selectedCurrency)
+            _currency1.value = _currency1.value.copy(
+                currentAmount = getConvertedAmount(
+                    selectedCurrency,
+                    _currency1.value.currencyName,
+                    _currency2.value.currentAmount
+                )
+            )
+        }
+    }
+
+    private fun getConvertedAmount(currencyA: String, currencyB: String, total: String): String {
+        return ((currencyAmountMapping[currencyB]!! / currencyAmountMapping[currencyA]!!) * (total.toDouble())).toString()
     }
 
     private fun convertCurrencyRatesBasedOnValue(value: String) {
@@ -106,10 +162,26 @@ class MainViewModel @Inject constructor(
     private fun convertAmount(from: String, to: String): Double {
         return (currencyAmountMapping[from]!! / currencyAmountMapping[to]!!) * (if (_amount.value.isEmpty()) 1.0 else _amount.value.toDouble())
     }
-    fun onDisclaimerClicked(value: Boolean){
+
+    fun onDisclaimerClicked(value: Boolean) {
         _disclaimer.value = value
     }
-    fun onLicenseClicked(value: Boolean){
+
+    fun onLicenseClicked(value: Boolean) {
         _license.value = value
     }
+
+    fun getLastUpdatedTime(): String {
+        val instant = Instant.ofEpochMilli(appConfig.getLastFetchTimestamp())
+        val localDateTime = LocalDateTime.ofInstant(instant, ZoneId.systemDefault())
+        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+        return localDateTime.format(formatter)
+    }
 }
+
+enum class CurrencyInputType {
+    CURRENCY_1,
+    CURRENCY_2
+}
+
+data class CurrencySelectionModel(val currencyName: String, val currentAmount: String)

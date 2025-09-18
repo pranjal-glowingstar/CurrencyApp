@@ -18,7 +18,6 @@ import com.apps.currencyapp.presentation.viewmodel.MainViewModel
 import com.apps.currencyapp.ui.theme.CurrencyAppTheme
 import com.apps.currencyapp.utils.AppConstants
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
@@ -42,18 +41,22 @@ class MainActivity : ComponentActivity() {
     }
     private fun addObservers(){
         lifecycleScope.launch {
-            viewModel.disclaimer.collectLatest {
-                if(it){
-                    viewModel.onDisclaimerClicked(false)
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(AppConstants.DISCLAIMER_URL))
-                    startActivity(intent)
+            launch{
+                viewModel.disclaimer.collect {
+                    if(it){
+                        viewModel.onDisclaimerClicked(false)
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(AppConstants.DISCLAIMER_URL))
+                        startActivity(intent)
+                    }
                 }
             }
-            viewModel.license.collectLatest {
-                if(it){
-                    viewModel.onLicenseClicked(false)
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(AppConstants.LICENSE_URL))
-                    startActivity(intent)
+            launch{
+                viewModel.license.collect {
+                    if(it){
+                        viewModel.onLicenseClicked(false)
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(AppConstants.LICENSE_URL))
+                        startActivity(intent)
+                    }
                 }
             }
         }

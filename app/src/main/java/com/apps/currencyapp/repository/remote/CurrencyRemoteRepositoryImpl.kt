@@ -1,5 +1,6 @@
 package com.apps.currencyapp.repository.remote
 
+import com.apps.currencyapp.BuildConfig
 import com.apps.currencyapp.data.remote.CurrencyApi
 import com.apps.currencyapp.data.remote.models.CurrencyModel
 import com.apps.currencyapp.utils.AppConstants
@@ -13,7 +14,7 @@ class CurrencyRemoteRepositoryImpl @Inject constructor(private val currencyApi: 
     private fun getQueryParamMap(): Map<String, String>{
         return mutableMapOf<String, String>().apply {
             put(AppConstants.QUERY_BASE, AppConstants.DEFAULT_CURRENCY)
-            put(AppConstants.QUERY_APP_ID, AppConstants.APP_ID)
+            put(AppConstants.QUERY_APP_ID, BuildConfig.ACCESS_TOKEN)
         }
     }
 }

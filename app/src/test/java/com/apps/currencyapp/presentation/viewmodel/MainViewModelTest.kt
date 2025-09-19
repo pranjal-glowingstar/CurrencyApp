@@ -60,7 +60,6 @@ class MainViewModelTest {
         every { assetManager.open(AppConstants.DEFAULT_CURRENCY_RATES) } answers { ByteArrayInputStream(countryJsonString.toByteArray()) }
 
         mainViewModel = MainViewModel(currencyRemoteRepository, currencyLocalRepository, appConfig, context, gson)
-        mainViewModel.warmViewModelWithDefaults()
 
         coEvery { currencyLocalRepository.saveAllCurrencies(any()) } just Runs
         every { appConfig.setLastFetchTimestamp(any()) } just Runs
@@ -105,7 +104,7 @@ class MainViewModelTest {
     @Test
     fun selectCountryAsJapanAndCheckNewExchangeRate() = runTest {
         fetchDefaultRatesThroughApiCall()
-        mainViewModel.onCurrencySelected("JPY")
+        mainViewModel.onCurrencySelected("JPY", CurrencyInputType.CURRENCY_1)
         advanceUntilIdle()
         assertNotNull(mainViewModel.currencies.value)
         assertEquals(mainViewModel.currencies.value[0].amount, 0.59, 0.1)
@@ -115,7 +114,7 @@ class MainViewModelTest {
     fun selectCountryAsJapanAndCheckNewExchangeRateByAddingSeventeenYen() = runTest{
         fetchDefaultRatesThroughApiCall()
         selectCountryAsJapanAndCheckNewExchangeRate()
-        mainViewModel.updateAmount("17")
+        mainViewModel.updateAmount("17", CurrencyInputType.CURRENCY_2)
         advanceUntilIdle()
         assertNotNull(mainViewModel.currencies.value)
         assertEquals(mainViewModel.currencies.value[0].amount, 10.10, 0.1)

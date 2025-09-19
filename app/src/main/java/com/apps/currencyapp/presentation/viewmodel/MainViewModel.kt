@@ -15,7 +15,9 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -34,10 +36,8 @@ class MainViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _currencies = MutableStateFlow(listOf<CurrencyEntity>())
-    private val _amount = MutableStateFlow("")
     private val _shouldShowLoader = MutableStateFlow(false)
-    private val _disclaimer = MutableStateFlow(false)
-    private val _license = MutableStateFlow(false)
+    private val _footerAction: MutableSharedFlow<FooterAction?> = MutableSharedFlow()
     private val _currency1 =
         MutableStateFlow(CurrencySelectionModel(AppConstants.DEFAULT_CURRENCY_1, ""))
     private val _currency2 =
@@ -46,9 +46,7 @@ class MainViewModel @Inject constructor(
     private var countryCodeMapping = mutableMapOf<String, String>()
 
     val currencies = _currencies.asStateFlow()
-    val amount = _amount.asStateFlow()
-    val disclaimer = _disclaimer.asStateFlow()
-    val license = _license.asStateFlow()
+    val footerAction = _footerAction.asSharedFlow()
     val currency1 = _currency1.asStateFlow()
     val currency2 = _currency2.asStateFlow()
 
@@ -98,11 +96,6 @@ class MainViewModel @Inject constructor(
     }
 
     fun updateAmount(value: String, type: CurrencyInputType) {
-        if(value == AppConstants.EMPTY){
-            _currency1.value = _currency1.value.copy(currentAmount = AppConstants.EMPTY)
-            _currency2.value = _currency2.value.copy(currentAmount = AppConstants.EMPTY)
-            return
-        }
         if (type == CurrencyInputType.CURRENCY_1) {
             _currency1.value = _currency1.value.copy(currentAmount = value)
             _currency2.value = _currency2.value.copy(
@@ -154,14 +147,16 @@ class MainViewModel @Inject constructor(
         return String.format("%.3f", result)
     }
 
-    fun onDisclaimerClicked(value: Boolean) {
-        _disclaimer.value = value
+    fun onDisclaimerClicked() {
+        viewModelScope.launch {
+            _footerAction.emit(FooterAction.DISCLAIMER)
+        }
     }
-
-    fun onLicenseClicked(value: Boolean) {
-        _license.value = value
+    fun onLicenseClicked() {
+        viewModelScope.launch {
+            _footerAction.emit(FooterAction.LICENSE)
+        }
     }
-
     fun getLastUpdatedTime(): String {
         val instant = Instant.ofEpochMilli(appConfig.getLastFetchTimestamp())
         val localDateTime = LocalDateTime.ofInstant(instant, ZoneId.systemDefault())
@@ -171,10 +166,18 @@ class MainViewModel @Inject constructor(
     fun onCurrencySwapped(){
         _currency1.value = _currency2.value.also { _currency2.value = _currency1.value }
     }
+    fun refreshRates(){
+        appConfig.setLastFetchTimestamp(-1)
+        fetchDefaultUSDExchangeRate()
+    }
 }
 
 enum class CurrencyInputType {
     CURRENCY_1,
     CURRENCY_2
+}
+enum class FooterAction{
+    DISCLAIMER,
+    LICENSE
 }
 data class CurrencySelectionModel(val currencyName: String, val currentAmount: String)

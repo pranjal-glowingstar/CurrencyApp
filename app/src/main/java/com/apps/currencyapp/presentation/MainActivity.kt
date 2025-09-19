@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.core.net.toUri
 import androidx.lifecycle.lifecycleScope
 import com.apps.currencyapp.presentation.composables.MainScreen
+import com.apps.currencyapp.presentation.viewmodel.FooterAction
 import com.apps.currencyapp.presentation.viewmodel.MainViewModel
 import com.apps.currencyapp.ui.theme.CurrencyAppTheme
 import com.apps.currencyapp.utils.AppConstants
@@ -40,21 +41,18 @@ class MainActivity : ComponentActivity() {
     }
     private fun addObservers(){
         lifecycleScope.launch {
-            launch{
-                viewModel.disclaimer.collect {
-                    if(it){
-                        viewModel.onDisclaimerClicked(false)
+            viewModel.footerAction.collect { action ->
+                when(action){
+                    FooterAction.DISCLAIMER -> {
                         val intent = Intent(Intent.ACTION_VIEW, AppConstants.DISCLAIMER_URL.toUri())
                         startActivity(intent)
                     }
-                }
-            }
-            launch{
-                viewModel.license.collect {
-                    if(it){
-                        viewModel.onLicenseClicked(false)
+                    FooterAction.LICENSE -> {
                         val intent = Intent(Intent.ACTION_VIEW, AppConstants.LICENSE_URL.toUri())
                         startActivity(intent)
+                    }
+                    else -> {
+                        //do nothing
                     }
                 }
             }

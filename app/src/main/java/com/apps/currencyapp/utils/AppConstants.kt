@@ -15,6 +15,7 @@ object AppConstants {
     const val LICENSE_URL = "https://openexchangerates.org/license/"
     const val DEFAULT_CURRENCY_1 = "INR"
     const val DEFAULT_CURRENCY_2 = "USD"
+    const val EMPTY = ""
 
     object SharedPrefKeys{
         const val LAST_SYNC_TIME = "last_sync_time"

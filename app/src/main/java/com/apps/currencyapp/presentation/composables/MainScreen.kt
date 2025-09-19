@@ -51,6 +51,11 @@ fun MainScreen(viewModel: MainViewModel) {
             viewModel.onLicenseClicked(true)
         }
     }
+    val onCurrencySwapped = remember {
+        {
+            viewModel.onCurrencySwapped()
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.fetchDefaultUSDExchangeRate()
@@ -75,7 +80,7 @@ fun MainScreen(viewModel: MainViewModel) {
                 .padding(vertical = 12.dp)) {
                 ListItem(CurrencyInputType.CURRENCY_1, onValueChange, onCurrencySelected, currency1, currencies)
                 Spacer(modifier = Modifier.padding(top = 12.dp))
-                Exchanger()
+                Exchanger(onCurrencySwapped)
                 ListItem(CurrencyInputType.CURRENCY_2, onValueChange, onCurrencySelected, currency2, currencies)
             }
         }

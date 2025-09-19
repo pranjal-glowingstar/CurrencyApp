@@ -1,5 +1,6 @@
 package com.apps.currencyapp.presentation.viewmodel
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -51,7 +52,7 @@ class MainViewModel @Inject constructor(
     val currency1 = _currency1.asStateFlow()
     val currency2 = _currency2.asStateFlow()
 
-    fun warmViewModelWithDefaults() {
+    init {
         viewModelScope.launch(DispatcherProvider.getIODispatcher()) {
             var json = context.assets.open(AppConstants.COUNTRY_CODE_MAPPING).bufferedReader()
                 .use { it.readText() }
@@ -97,12 +98,17 @@ class MainViewModel @Inject constructor(
     }
 
     fun updateAmount(value: String, type: CurrencyInputType) {
+        if(value == AppConstants.EMPTY){
+            _currency1.value = _currency1.value.copy(currentAmount = AppConstants.EMPTY)
+            _currency2.value = _currency2.value.copy(currentAmount = AppConstants.EMPTY)
+            return
+        }
         if (type == CurrencyInputType.CURRENCY_1) {
             _currency1.value = _currency1.value.copy(currentAmount = value)
             _currency2.value = _currency2.value.copy(
                 currentAmount = getConvertedAmount(
-                    _currency1.value.currencyName,
                     _currency2.value.currencyName,
+                    _currency1.value.currencyName,
                     _currency1.value.currentAmount
                 )
             )
@@ -117,15 +123,13 @@ class MainViewModel @Inject constructor(
             )
         }
     }
-
-    //amount*x USD
     fun onCurrencySelected(selectedCurrency: String, currencyInputType: CurrencyInputType) {
         if (currencyInputType == CurrencyInputType.CURRENCY_1) {
             _currency1.value = _currency1.value.copy(currencyName = selectedCurrency)
             _currency2.value = _currency2.value.copy(
                 currentAmount = getConvertedAmount(
-                    selectedCurrency,
                     _currency2.value.currencyName,
+                    _currency1.value.currencyName,
                     _currency1.value.currentAmount
                 )
             )
@@ -133,34 +137,18 @@ class MainViewModel @Inject constructor(
             _currency2.value = _currency2.value.copy(currencyName = selectedCurrency)
             _currency1.value = _currency1.value.copy(
                 currentAmount = getConvertedAmount(
-                    selectedCurrency,
                     _currency1.value.currencyName,
+                    _currency2.value.currencyName,
                     _currency2.value.currentAmount
                 )
             )
         }
     }
 
+    @SuppressLint("DefaultLocale")
     private fun getConvertedAmount(currencyA: String, currencyB: String, total: String): String {
-        return ((currencyAmountMapping[currencyB]!! / currencyAmountMapping[currencyA]!!) * (total.toDouble())).toString()
-    }
-
-    private fun convertCurrencyRatesBasedOnValue(value: String) {
-        viewModelScope.launch(DispatcherProvider.getDefaultDispatcher()) {
-            var currentCurrencyList = _currencies.value.toMutableList()
-            currentCurrencyList = currentCurrencyList.map {
-                CurrencyEntity(
-                    it.currencyName,
-                    it.countryName,
-                    convertAmount(it.currencyName, value)
-                )
-            }.toMutableList()
-            _currencies.value = currentCurrencyList.sortedBy { it.countryName }
-        }
-    }
-
-    private fun convertAmount(from: String, to: String): Double {
-        return (currencyAmountMapping[from]!! / currencyAmountMapping[to]!!) * (if (_amount.value.isEmpty()) 1.0 else _amount.value.toDouble())
+        val result = ((currencyAmountMapping[currencyA]!! / currencyAmountMapping[currencyB]!!) * (total.toDouble()))
+        return String.format("%.3f", result)
     }
 
     fun onDisclaimerClicked(value: Boolean) {
@@ -177,11 +165,13 @@ class MainViewModel @Inject constructor(
         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
         return localDateTime.format(formatter)
     }
+    fun onCurrencySwapped(){
+        _currency1.value = _currency2.value.also { _currency2.value = _currency1.value }
+    }
 }
 
 enum class CurrencyInputType {
     CURRENCY_1,
     CURRENCY_2
 }
-
 data class CurrencySelectionModel(val currencyName: String, val currentAmount: String)

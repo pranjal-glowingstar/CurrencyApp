@@ -147,6 +147,9 @@ class MainViewModel @Inject constructor(
 
     @SuppressLint("DefaultLocale")
     private fun getConvertedAmount(currencyA: String, currencyB: String, total: String): String {
+        if(total == AppConstants.EMPTY){
+            return total
+        }
         val result = ((currencyAmountMapping[currencyA]!! / currencyAmountMapping[currencyB]!!) * (total.toDouble()))
         return String.format("%.3f", result)
     }

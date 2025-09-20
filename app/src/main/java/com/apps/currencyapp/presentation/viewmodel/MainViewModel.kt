@@ -144,7 +144,7 @@ class MainViewModel @Inject constructor(
             return total
         }
         val result = ((currencyAmountMapping[currencyA]!! / currencyAmountMapping[currencyB]!!) * (total.toDouble()))
-        return String.format("%.3f", result)
+        return String.format("%.6f", result)
     }
 
     fun onDisclaimerClicked() {

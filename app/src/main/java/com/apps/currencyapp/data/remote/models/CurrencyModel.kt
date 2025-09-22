@@ -1,11 +1,13 @@
 package com.apps.currencyapp.data.remote.models
 
-import com.google.gson.annotations.SerializedName
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class CurrencyModel(
-    @SerializedName("disclaimer") val disclaimer: String,
-    @SerializedName("license") val license: String,
-    @SerializedName("timestamp") val timestamp: Long,
-    @SerializedName("base") val base: String,
-    @SerializedName("rates") val rates: Map<String, Double>
+    @SerialName("disclaimer") val disclaimer: String,
+    @SerialName("license") val license: String,
+    @SerialName("timestamp") val timestamp: Long,
+    @SerialName("base") val base: String,
+    @SerialName("rates") val rates: Map<String, Double>
 )

@@ -6,11 +6,10 @@ import android.util.Log
 import com.apps.currencyapp.data.local.entity.CurrencyEntity
 import com.apps.currencyapp.data.local.sharedPref.AppConfig
 import com.apps.currencyapp.data.remote.models.CurrencyModel
-import com.apps.currencyapp.utils.DispatcherProvider
 import com.apps.currencyapp.repository.local.ICurrencyLocalRepository
 import com.apps.currencyapp.repository.remote.ICurrencyRemoteRepository
 import com.apps.currencyapp.utils.AppConstants
-import com.google.gson.Gson
+import com.apps.currencyapp.utils.DispatcherProvider
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.every
@@ -44,7 +43,6 @@ class MainViewModelTest {
     private val context = mockk<Context>()
     private val assetManager = mockk<AssetManager>()
     private val testDispatcher = StandardTestDispatcher()
-    private val gson = mockk<Gson>()
 
     @Before
     fun setup(){
@@ -59,7 +57,7 @@ class MainViewModelTest {
         every { assetManager.open(AppConstants.COUNTRY_CODE_MAPPING) } answers { ByteArrayInputStream(jsonString.toByteArray()) }
         every { assetManager.open(AppConstants.DEFAULT_CURRENCY_RATES) } answers { ByteArrayInputStream(countryJsonString.toByteArray()) }
 
-        mainViewModel = MainViewModel(currencyRemoteRepository, currencyLocalRepository, appConfig, context, gson)
+        mainViewModel = MainViewModel(currencyRemoteRepository, currencyLocalRepository, appConfig, context)
 
         coEvery { currencyLocalRepository.saveAllCurrencies(any()) } just Runs
         every { appConfig.setLastFetchTimestamp(any()) } just Runs

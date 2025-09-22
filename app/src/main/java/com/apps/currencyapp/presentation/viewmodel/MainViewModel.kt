@@ -11,8 +11,6 @@ import com.apps.currencyapp.repository.local.ICurrencyLocalRepository
 import com.apps.currencyapp.repository.remote.ICurrencyRemoteRepository
 import com.apps.currencyapp.utils.AppConstants
 import com.apps.currencyapp.utils.DispatcherProvider
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -20,6 +18,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -31,8 +30,7 @@ class MainViewModel @Inject constructor(
     private val currencyRemoteRepository: ICurrencyRemoteRepository,
     private val currencyLocalRepository: ICurrencyLocalRepository,
     private val appConfig: AppConfig,
-    @ApplicationContext private val context: Context,
-    private val gson: Gson
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _currencies = MutableStateFlow(listOf<CurrencyEntity>())
@@ -52,14 +50,15 @@ class MainViewModel @Inject constructor(
 
     init {
         viewModelScope.launch(DispatcherProvider.getIODispatcher()) {
+            val serializer = Json {
+                ignoreUnknownKeys = true
+            }
             var json = context.assets.open(AppConstants.COUNTRY_CODE_MAPPING).bufferedReader()
                 .use { it.readText() }
-            var type = object : TypeToken<Map<String, String>>() {}.type
-            countryCodeMapping = gson.fromJson(json, type)
+            countryCodeMapping = serializer.decodeFromString<Map<String, String>>(json).toMutableMap()
             json = context.assets.open(AppConstants.DEFAULT_CURRENCY_RATES).bufferedReader()
                 .use { it.readText() }
-            type = object : TypeToken<List<CurrencyEntity>>() {}.type
-            currencyLocalRepository.saveAllCurrencies(gson.fromJson(json, type))
+            currencyLocalRepository.saveAllCurrencies(serializer.decodeFromString<List<CurrencyEntity>>(json))
         }
     }
 

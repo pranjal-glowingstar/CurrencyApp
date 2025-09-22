@@ -14,7 +14,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
-    kotlin("plugin.serialization") version "2.1.20"
+    kotlin("plugin.serialization") version "2.2.0"
 }
 
 android {
@@ -90,8 +90,6 @@ dependencies {
     implementation(libs.androidx.room.paging)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.retrofit)
-    implementation(libs.converter.gson)
-    implementation(libs.gson)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.paging.runtime.ktx)
     implementation(libs.androidx.paging.compose)
@@ -99,4 +97,5 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     implementation(libs.coil.compose)
     implementation(libs.androidx.material.icons.extended)
+    implementation(libs.converter.kotlinx.serialization)
 }
